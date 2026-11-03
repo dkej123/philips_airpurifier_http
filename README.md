@@ -129,3 +129,13 @@ Sets the device used index(IAI or PM2.5)
 [github-link]: https://github.com/GeorgeSG/
 [twitter-icon]: http://i.imgur.com/wWzX9uB.png
 [twitter-link]: https://twitter.com/georgesg92
+
+## Sensors (fork dkej123)
+
+Besides the fan entity, the integration now creates sensor entities with the
+readings that were previously only fan attributes: PM2.5, allergen index,
+humidity, target humidity, temperature, water level and the pre/HEPA/carbon/wick
+filter hours (e.g. `sensor.philips_airpurifier_pm2_5`). They mirror the fan's
+polling, so they don't query the device separately, and have long-term
+statistics. No configuration needed - they come up together with the `fan`
+platform. Readings the model doesn't report stay unavailable.

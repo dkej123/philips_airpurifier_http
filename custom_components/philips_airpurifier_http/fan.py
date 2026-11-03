@@ -12,7 +12,9 @@ from homeassistant.components.fan import (
 from homeassistant.const import (
     CONF_HOST,
     CONF_NAME,
+    Platform,
 )
+from homeassistant.helpers.discovery import async_load_platform
 from .philips_airpurifier_fan import PhilipsAirPurifierFan
 from .const import DOMAIN, DEFAULT_NAME, SERVICE_ATTR_ENTITY_ID, DATA_PHILIPS_FANS
 from .services import SERVICE_TO_METHOD, AIRPURIFIER_SERVICE_SCHEMA
@@ -35,7 +37,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         lambda: HTTPAirClient(config[CONF_HOST], False)
     )
 
-    device = PhilipsAirPurifierFan(hass, client, name)
+    device = PhilipsAirPurifierFan(hass, client, name, config[CONF_HOST])
 
     if DATA_PHILIPS_FANS not in hass.data:
         hass.data[DATA_PHILIPS_FANS] = []
@@ -43,6 +45,17 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     hass.data[DATA_PHILIPS_FANS].append(device)
 
     async_add_entities([device])
+
+    # Expose readings (PM2.5, humidity, filters...) as separate sensor entities.
+    hass.async_create_task(
+        async_load_platform(
+            hass,
+            Platform.SENSOR,
+            DOMAIN,
+            {CONF_HOST: config[CONF_HOST], CONF_NAME: name},
+            {},
+        )
+    )
 
     async def async_service_handler(service):
         entity_ids = service.data.get(SERVICE_ATTR_ENTITY_ID)

@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Callable
 from functools import partial
 
 from homeassistant.components.fan import (
@@ -69,10 +70,12 @@ _LOGGER = logging.getLogger(__name__)
 class PhilipsAirPurifierFan(FanEntity):
     """philips_aurpurifier fan entity."""
 
-    def __init__(self, hass, client, name):
+    def __init__(self, hass, client, name, host=None):
         self.hass = hass
         self._client = client
         self._name = name
+        self.host = host
+        self._update_listeners: list[Callable[[], None]] = []
 
         self._available = False
         self._state = None
@@ -113,6 +116,14 @@ class PhilipsAirPurifierFan(FanEntity):
         except Exception:
             _LOGGER.error("Error updating the fan.", exc_info=True)
             self._available = False
+
+        for listener in list(self._update_listeners):
+            listener()
+
+    def add_update_listener(self, listener: Callable[[], None]) -> Callable[[], None]:
+        """Call listener after every state fetch; returns a remove callback."""
+        self._update_listeners.append(listener)
+        return lambda: self._update_listeners.remove(listener)
 
     async def _update_filters(self):
         filters = await self.hass.async_add_executor_job(self._client.get_filters)
